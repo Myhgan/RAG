@@ -1,2 +1,11 @@
 virtualenv
 flask
+flask-cors
+requests
+sseclient
+langchain
+langchain_community
+pinecone-client
+openai
+langchain_openai
+pypdf

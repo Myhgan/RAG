@@ -1,4 +1,4 @@
-from main import create_app
+from __init__ import create_app
 
 main = create_app()
 
