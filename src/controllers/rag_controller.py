@@ -80,7 +80,7 @@ def embed_web():
     chunks = chunk_text(url_text)
     pinecone_service.embed_chunks_and_upload_to_pinecone(chunks, PINECONE_INDEX_NAME)
     response_json = {
-        "message": "Chunks embedded and stored successfully"
+        "message": "Chunks embedded web successfully"
     }
     return jsonify(response_json)
 

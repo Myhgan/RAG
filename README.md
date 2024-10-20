@@ -40,7 +40,7 @@ python main.py
 # Chạy app với Docker
 # Hướng dẫn chạy với docker 
 ```
-docker run --name rag -p 5000:5000 --env-file .env myhgan1/rag
+docker run --name rag -p 5000:5000 myhgan1/rag
 ```
 
 # Lệnh chạy Redis container nếu cần 
