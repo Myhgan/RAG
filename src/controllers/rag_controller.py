@@ -6,7 +6,7 @@ from flask import request, jsonify, Response, stream_with_context
 import sseclient
 from src.services import openai_service, pinecone_service
 from src.utils.prompt_utils import chunk_text, format_response
-from src.services.vector_db_service import embed_pdf_and_store, scrape_website
+from src.services.split_service import embed_pdf_and_store, scrape_website
 from colorama import Fore, Style
 
 PINECONE_INDEX_NAME = 'index237'
@@ -73,8 +73,8 @@ def handle_query():
         
     return Response(stream_with_context(generate()), mimetype='application/json')
 
-@api_blueprint.route('/embed-and-store', methods=['POST'])
-def embed_and_store():
+@api_blueprint.route('/embed-web', methods=['POST'])
+def embed_web():
     url = request.json['url']
     url_text = scrape_website(url)
     chunks = chunk_text(url_text)
