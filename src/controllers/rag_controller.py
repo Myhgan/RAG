@@ -5,7 +5,7 @@ import json
 from flask import request, jsonify, Response, stream_with_context
 import sseclient
 from src.services import openai_service, pinecone_service, scraping_service
-from src.utils.prompt_utils import chunk_text
+from src.utils.prompt_utils import chunk_text, format_response
 from src.services.vector_db_service import embed_pdf_and_store
 from colorama import Fore, Style
 
@@ -33,7 +33,11 @@ def handle_query():
     question = request.json['question']
     chat_history = request.json.get('chatHistory', [])
 
-    context_chunks = pinecone_service.get_most_similar_chunks_for_query(question, PINECONE_INDEX_NAME)
+    try:
+        context_chunks = pinecone_service.get_most_similar_chunks_for_query(question, PINECONE_INDEX_NAME)
+    except Exception as e:
+        error_message = f"Error retrieving similar chunks: {str(e)}"
+        return jsonify(format_response(success=False, message=error_message))
 
     # if context_chunks:
     #     print(f"Kết quả khi so sánh vector db ({len(context_chunks)} kết quả):")
@@ -45,22 +49,27 @@ def handle_query():
     headers, data = openai_service.construct_llm_payload(question, context_chunks, chat_history)
 
     def generate():
-        url = 'https://api.openai.com/v1/chat/completions'
-        response = requests.post(url, headers=headers, json=data, stream=True)
-        client = sseclient.SSEClient(response)
+        try:
+            url = 'https://api.openai.com/v1/chat/completions'
+            response = requests.post(url, headers=headers, json=data, stream=True)
+            client = sseclient.SSEClient(response)
 
-        response_text = ""
+            response_text = ""
+            for event in client.events():
+                if event.data != '[DONE]':
+                    try:
+                        text = json.loads(event.data)['choices'][0]['delta']['content']
+                        response_text += text
+                    except Exception as e:
+                        continue  # Nếu có lỗi thì tiếp tục chu trình
 
-        for event in client.events():
-            if event.data != '[DONE]':
-                try:
-                    text = json.loads(event.data)['choices'][0]['delta']['content']
-                    response_text += text
-                except Exception as e:
-                    response_text += ''
-
-        # Trả về phản hồi JSON
-        yield json.dumps({"response": response_text})
+            # Trả về phản hồi JSON với cấu trúc chuẩn
+            yield json.dumps(format_response(data={"message": response_text}, success=True))
+        
+        except Exception as e:
+            error_message = f"Error processing OpenAI API response: {str(e)}"
+            yield json.dumps(format_response(success=False, message=error_message))
+        
     return Response(stream_with_context(generate()), mimetype='application/json')
 
 @api_blueprint.route('/embed-and-store', methods=['POST'])

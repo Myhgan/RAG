@@ -1,3 +1,5 @@
+from datetime import datetime
+
 PROMPT_LIMIT = 3750
 
 def chunk_text(text, chunk_size=100):
@@ -62,3 +64,15 @@ def construct_messages_list(chat_history, prompt):
 
     return messages
 
+
+def format_response(data=None, success=True, message="Success"):
+    current_time = datetime.now().isoformat()
+    response_message = "Success" if success else "Error"
+    if message:
+        response_message = message
+        
+    return {
+        "responseTime": current_time,
+        "responseMessage": response_message,
+        "data": data if data else {}
+    }
