@@ -1,6 +1,6 @@
 PROMPT_LIMIT = 3750
 
-def chunk_text(text, chunk_size=200):
+def chunk_text(text, chunk_size=100):
 
     sentences = text.split('. ')
     chunks = []

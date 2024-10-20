@@ -10,22 +10,23 @@ from src.services.vector_db_service import embed_pdf_and_store
 from colorama import Fore, Style
 
 PINECONE_INDEX_NAME = 'index237'
-
 @api_blueprint.route('/embed-pdf', methods=['POST'])
 def embed_pdf():
     if 'pdf_file' not in request.files:
         return jsonify({"error": "No PDF file provided"}), 400
         
     file = request.files['pdf_file']
-    file_path = f"/tmp/{file.filename}"
-    # file_path = rf"E:\RAG\file\{file.filename}"
+    temp_dir = "E:\\RAG\\temp"
+    os.makedirs(temp_dir, exist_ok=True)
+    file_path = os.path.join(temp_dir, file.filename)
     
     with open(file_path, 'wb') as f:
         f.write(file.read())
     
     response_message = embed_pdf_and_store(file_path, PINECONE_INDEX_NAME)
-    os.remove(file_path)
+    os.remove(file_path)  # Xóa file tạm sau khi sử dụng
     return jsonify({"message": response_message})
+
 
 @api_blueprint.route('/handle-query', methods=['POST'])
 def handle_query():
