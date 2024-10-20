@@ -4,12 +4,13 @@ import requests
 import json
 from flask import request, jsonify, Response, stream_with_context
 import sseclient
-from src.services import openai_service, pinecone_service, scraping_service
+from src.services import openai_service, pinecone_service
 from src.utils.prompt_utils import chunk_text, format_response
-from src.services.vector_db_service import embed_pdf_and_store
+from src.services.vector_db_service import embed_pdf_and_store, scrape_website
 from colorama import Fore, Style
 
 PINECONE_INDEX_NAME = 'index237'
+
 @api_blueprint.route('/embed-pdf', methods=['POST'])
 def embed_pdf():
     if 'pdf_file' not in request.files:
@@ -75,7 +76,7 @@ def handle_query():
 @api_blueprint.route('/embed-and-store', methods=['POST'])
 def embed_and_store():
     url = request.json['url']
-    url_text = scraping_service.scrape_website(url)
+    url_text = scrape_website(url)
     chunks = chunk_text(url_text)
     pinecone_service.embed_chunks_and_upload_to_pinecone(chunks, PINECONE_INDEX_NAME)
     response_json = {
