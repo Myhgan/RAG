@@ -11,3 +11,5 @@ langchain-community
 langchain_openai
 pypdf
 colorama
+redis
+time

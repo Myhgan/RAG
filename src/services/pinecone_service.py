@@ -3,10 +3,14 @@ from langchain_openai import OpenAIEmbeddings
 from langchain_community.vectorstores import Pinecone as LangchainPinecone
 from src.services.openai_service import get_embedding
 from pinecone import Pinecone as PineconeClient, ServerlessSpec
+import redis
+import json
+import time
 
 # Khởi tạo Pinecone
 PINECONE_API_KEY = os.getenv('PINECONE_API_KEY')
 PINECONE_ENVIRONMENT = "us-east-1"
+redis_client = redis.StrictRedis(host='localhost', port=6379, db=0)
 
 # Khởi tạo client
 pc = PineconeClient(api_key=PINECONE_API_KEY)
@@ -50,6 +54,17 @@ def get_most_similar_chunks_for_query(query, index_name):
     if index_name not in pc.list_indexes().names():
         raise ValueError(f"Index {index_name} does not exist")
 
+    # start_time = time.time() 
+
+    # # Kiểm tra cache
+    # cache_key = f"query_cache:{query}"
+    # cached_result = redis_client.get(cache_key)
+    # if cached_result:
+    #     end_time = time.time()  # Thời gian kết thúc khi tìm thấy trong cache
+    #     elapsed_time_with_cache = end_time - start_time
+    #     print(f"Thời gian truy vấn khi sử dụng Redis cache: {elapsed_time_with_cache:.4f} giây")
+    #     return json.loads(cached_result)
+
     print("\nEmbedding query using OpenAI ...")
     question_embedding = get_embedding(query)
 
@@ -62,8 +77,11 @@ def get_most_similar_chunks_for_query(query, index_name):
     # Lấy văn bản từ kết quả truy vấn
     context_chunks = [x['metadata']['chunk_text'] for x in query_results['matches']]
     
-    # # In ra kết quả trả về để kiểm tra
+    # In ra kết quả trả về để kiểm tra
     # print(f"Kết quả tìm kiếm: {context_chunks}")
+
+    # Lưu kết quả vào cache trong 1 giờ
+    # redis_client.set(cache_key, json.dumps(context_chunks), ex=3600)
     
     return context_chunks
 
