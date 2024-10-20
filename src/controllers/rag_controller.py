@@ -7,7 +7,7 @@ import sseclient
 from src.services import openai_service, pinecone_service, scraping_service
 from src.utils.prompt_utils import chunk_text
 from src.services.vector_db_service import embed_pdf_and_store
-
+from colorama import Fore, Style
 
 PINECONE_INDEX_NAME = 'index237'
 
@@ -30,23 +30,37 @@ def embed_pdf():
 @api_blueprint.route('/handle-query', methods=['POST'])
 def handle_query():
     question = request.json['question']
-    chat_history = request.json['chatHistory']
+    chat_history = request.json.get('chatHistory', [])
 
     context_chunks = pinecone_service.get_most_similar_chunks_for_query(question, PINECONE_INDEX_NAME)
+
+    # if context_chunks:
+    #     print(f"Kết quả khi so sánh vector db ({len(context_chunks)} kết quả):")
+    #     for index, chunk in enumerate(context_chunks, start=1):
+    #         print(f"{Fore.GREEN}Kết quả {index}: {Style.RESET_ALL}{chunk}")
+    # else:
+    #     print("Không tìm thấy kết quả nào từ cơ sở dữ liệu.")
+
     headers, data = openai_service.construct_llm_payload(question, context_chunks, chat_history)
+
     def generate():
         url = 'https://api.openai.com/v1/chat/completions'
-        response = requests.post(url, headers=headers, json=data, stream=True) 
+        response = requests.post(url, headers=headers, json=data, stream=True)
         client = sseclient.SSEClient(response)
+
+        response_text = ""
+
         for event in client.events():
             if event.data != '[DONE]':
                 try:
                     text = json.loads(event.data)['choices'][0]['delta']['content']
-                    yield(text)
-                except:
-                    yield('')
+                    response_text += text
+                except Exception as e:
+                    response_text += ''
 
-    return Response(stream_with_context(generate()))
+        # Trả về phản hồi JSON
+        yield json.dumps({"response": response_text})
+    return Response(stream_with_context(generate()), mimetype='application/json')
 
 @api_blueprint.route('/embed-and-store', methods=['POST'])
 def embed_and_store():
