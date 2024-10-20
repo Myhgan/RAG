@@ -1,2 +1,14 @@
 virtualenv
 flask
+requests
+beautifulsoup4
+pinecone-client
+flask-cors
+python-dotenv
+sseclient-py
+langchain
+langchain-community
+langchain_openai
+pypdf
+colorama
+redis
